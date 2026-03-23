@@ -9,6 +9,7 @@ interface Props {
 export default function Auth({ defaultTab = "login", onBack }: Props) {
   const [tab, setTab] = useState<"login" | "signup">(defaultTab);
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -19,7 +20,17 @@ export default function Auth({ defaultTab = "login", onBack }: Props) {
     setMessage("");
     try {
       if (tab === "signup") {
-        await signUp(email, password, name, email.split("@")[0]);
+        if (!nickname.trim()) {
+          setMessage("error:닉네임을 입력해주세요");
+          setLoading(false);
+          return;
+        }
+        if (nickname.length < 2 || nickname.length > 15) {
+          setMessage("error:닉네임은 2~15자 사이로 입력해주세요");
+          setLoading(false);
+          return;
+        }
+        await signUp(email, password, name, nickname);
         setMessage("success:회원가입 성공! 🎉 환영합니다!");
       } else {
         await signIn(email, password);
@@ -52,6 +63,19 @@ export default function Auth({ defaultTab = "login", onBack }: Props) {
   const isSuccess = message.startsWith("success:");
   const msgText = message.replace(/^(success|error):/, "");
 
+  const inputStyle = {
+    width: "100%", padding: "0.75rem 1rem",
+    border: "1.5px solid rgba(26,23,20,0.1)", borderRadius: "10px",
+    fontSize: "0.9375rem", fontFamily: "inherit",
+    background: "#FAFAF9", outline: "none",
+    boxSizing: "border-box" as const,
+  };
+
+  const labelStyle = {
+    fontSize: "0.8125rem", fontWeight: 500 as const,
+    display: "block", marginBottom: "0.5rem",
+  };
+
   return (
     <div style={{
       minHeight: "100vh", background: "#F5F0E8",
@@ -60,19 +84,15 @@ export default function Auth({ defaultTab = "login", onBack }: Props) {
       fontFamily: "'Segoe UI', sans-serif", padding: "2rem",
     }}>
 
-      {/* 뒤로가기 */}
       {onBack && (
         <button onClick={onBack} style={{
           position: "fixed", top: "1.5rem", left: "1.5rem",
           background: "none", border: "none", cursor: "pointer",
           fontSize: "0.875rem", color: "#8A8278", fontFamily: "inherit",
           display: "flex", alignItems: "center", gap: "0.375rem",
-        }}>
-          ← 홈으로
-        </button>
+        }}>← 홈으로</button>
       )}
 
-      {/* 로고 */}
       <div style={{
         fontFamily: "Georgia, serif", fontSize: "2rem",
         fontWeight: 700, marginBottom: "2.5rem", letterSpacing: "-0.5px",
@@ -80,7 +100,6 @@ export default function Auth({ defaultTab = "login", onBack }: Props) {
         Travel<span style={{ color: "#C4622D", fontStyle: "italic" }}>og</span>
       </div>
 
-      {/* 카드 */}
       <div style={{
         background: "white", borderRadius: "24px",
         border: "0.5px solid rgba(26,23,20,0.1)",
@@ -118,35 +137,50 @@ export default function Auth({ defaultTab = "login", onBack }: Props) {
           {tab === "login" ? "계정에 로그인하고 여행을 이어가세요" : "무료로 가입하고 첫 번째 여행을 기록해보세요"}
         </p>
 
-        {/* 이름 */}
+        {/* 회원가입 전용 필드 */}
         {tab === "signup" && (
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ fontSize: "0.8125rem", fontWeight: 500, display: "block", marginBottom: "0.5rem" }}>이름</label>
-            <input value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="홍길동"
-              style={{
-                width: "100%", padding: "0.75rem 1rem",
-                border: "1.5px solid rgba(26,23,20,0.1)", borderRadius: "10px",
-                fontSize: "0.9375rem", fontFamily: "inherit",
-                background: "#FAFAF9", outline: "none", boxSizing: "border-box" as const,
-              }}
-              onFocus={e => e.target.style.borderColor = "#C4622D"}
-              onBlur={e => e.target.style.borderColor = "rgba(26,23,20,0.1)"}
-            />
-          </div>
+          <>
+            {/* 이름 */}
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={labelStyle}>이름</label>
+              <input value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="홍길동" style={inputStyle}
+                onFocus={e => e.target.style.borderColor = "#C4622D"}
+                onBlur={e => e.target.style.borderColor = "rgba(26,23,20,0.1)"}
+              />
+            </div>
+
+            {/* 닉네임 */}
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={labelStyle}>닉네임</label>
+              <div style={{ position: "relative" }}>
+                <span style={{
+                  position: "absolute", left: "1rem", top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: "0.9375rem", color: "#8A8278",
+                }}>@</span>
+                <input
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value.replace(/[^a-zA-Z0-9_가-힣]/g, ""))}
+                  placeholder="traveler_kim"
+                  maxLength={15}
+                  style={{ ...inputStyle, paddingLeft: "2rem" }}
+                  onFocus={e => e.target.style.borderColor = "#C4622D"}
+                  onBlur={e => e.target.style.borderColor = "rgba(26,23,20,0.1)"}
+                />
+              </div>
+              <p style={{ fontSize: "0.7rem", color: "#8A8278", marginTop: "0.375rem" }}>
+                2~15자, 한글/영문/숫자/_ 사용 가능 ({nickname.length}/15)
+              </p>
+            </div>
+          </>
         )}
 
         {/* 이메일 */}
         <div style={{ marginBottom: "1rem" }}>
-          <label style={{ fontSize: "0.8125rem", fontWeight: 500, display: "block", marginBottom: "0.5rem" }}>이메일</label>
+          <label style={labelStyle}>이메일</label>
           <input value={email} onChange={(e) => setEmail(e.target.value)}
-            type="email" placeholder="hello@travelog.app"
-            style={{
-              width: "100%", padding: "0.75rem 1rem",
-              border: "1.5px solid rgba(26,23,20,0.1)", borderRadius: "10px",
-              fontSize: "0.9375rem", fontFamily: "inherit",
-              background: "#FAFAF9", outline: "none", boxSizing: "border-box" as const,
-            }}
+            type="email" placeholder="hello@travelog.app" style={inputStyle}
             onFocus={e => e.target.style.borderColor = "#C4622D"}
             onBlur={e => e.target.style.borderColor = "rgba(26,23,20,0.1)"}
           />
@@ -154,15 +188,9 @@ export default function Auth({ defaultTab = "login", onBack }: Props) {
 
         {/* 비밀번호 */}
         <div style={{ marginBottom: "1.5rem" }}>
-          <label style={{ fontSize: "0.8125rem", fontWeight: 500, display: "block", marginBottom: "0.5rem" }}>비밀번호</label>
+          <label style={labelStyle}>비밀번호</label>
           <input value={password} onChange={(e) => setPassword(e.target.value)}
-            type="password" placeholder="6자 이상 입력"
-            style={{
-              width: "100%", padding: "0.75rem 1rem",
-              border: "1.5px solid rgba(26,23,20,0.1)", borderRadius: "10px",
-              fontSize: "0.9375rem", fontFamily: "inherit",
-              background: "#FAFAF9", outline: "none", boxSizing: "border-box" as const,
-            }}
+            type="password" placeholder="6자 이상 입력" style={inputStyle}
             onFocus={e => e.target.style.borderColor = "#C4622D"}
             onBlur={e => e.target.style.borderColor = "rgba(26,23,20,0.1)"}
           />
@@ -218,7 +246,6 @@ export default function Auth({ defaultTab = "login", onBack }: Props) {
         </button>
       </div>
 
-      {/* 하단 링크 */}
       <p style={{ marginTop: "1.5rem", fontSize: "0.875rem", color: "#8A8278" }}>
         {tab === "login" ? "아직 계정이 없으신가요? " : "이미 계정이 있으신가요? "}
         <span
