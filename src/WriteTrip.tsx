@@ -27,7 +27,7 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
   const [mediaUrls, setMediaUrls] = useState<UploadResult[]>(editingTrip?.mediaUrls || []);
   const [uploadProgress, setUploadProgress] = useState<number[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [coverIndex, setCoverIndex] = useState<number>(editingTrip?.coverIndex || 0);
+  const [coverIndex, setCoverIndex] = useState<number>(editingTrip?.coverIndex ?? 0);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -40,16 +40,14 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
     setMediaFiles(prev => [...prev, ...validFiles]);
   };
 
-  const handleRemoveFile = (index: number) => {
-    setMediaFiles(prev => prev.filter((_, i) => i !== index));
-    if (coverIndex >= mediaUrls.length + index) {
-      setCoverIndex(0);
-    }
-  };
-
   const handleRemoveUploaded = (index: number) => {
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
-    if (coverIndex === index) setCoverIndex(0);
+    setCoverIndex(0);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+    setCoverIndex(0);
   };
 
   const handleSave = async () => {
@@ -123,10 +121,7 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
     padding: "1.5rem", marginBottom: "1.25rem",
   };
 
-  const allMedia = [
-    ...mediaUrls.map((m, i) => ({ type: "uploaded", data: m, index: i })),
-    ...mediaFiles.map((f, i) => ({ type: "new", data: f, index: mediaUrls.length + i })),
-  ];
+  const totalCount = mediaUrls.length + mediaFiles.length;
 
   return (
     <div style={{ minHeight: "100vh", background: "#F5F0E8", fontFamily: "sans-serif" }}>
@@ -164,7 +159,6 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
         </div>
       </div>
 
-      {/* 본문 */}
       <div style={{ maxWidth: "720px", margin: "0 auto", padding: "2rem" }}>
 
         {message && (
@@ -231,59 +225,72 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
         {/* 사진/영상 업로드 */}
         <div style={sectionStyle}>
           <label style={labelStyle}>사진 & 영상</label>
-          {allMedia.length > 0 && (
+          {totalCount > 0 && (
             <p style={{ fontSize: "0.75rem", color: "#8A8278", marginBottom: "0.875rem" }}>
               🖼️ 커버로 쓸 사진을 클릭해서 선택하세요
             </p>
           )}
 
-          {allMedia.length > 0 && (
+          {totalCount > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem", marginBottom: "1rem" }}>
-              {allMedia.map((item, i) => {
-                const isCover = coverIndex === item.index;
-                const isUploaded = item.type === "uploaded";
-                const media = item.data as any;
 
+              {mediaUrls.map((media, i) => (
+                <div key={`uploaded-${i}`} onClick={() => setCoverIndex(i)}
+                  style={{
+                    position: "relative", borderRadius: "10px",
+                    overflow: "hidden", aspectRatio: "4/3", cursor: "pointer",
+                    outline: coverIndex === i ? "3px solid #C4622D" : "3px solid transparent",
+                    transition: "outline 0.15s",
+                  }}
+                >
+                  {media.type === "video" ? (
+                    <video src={media.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <img src={media.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  )}
+                  {coverIndex === i && (
+                    <div style={{
+                      position: "absolute", top: "0.375rem", left: "0.375rem",
+                      background: "#C4622D", color: "white",
+                      fontSize: "0.65rem", fontWeight: 500,
+                      padding: "0.2rem 0.5rem", borderRadius: "100px",
+                    }}>커버</div>
+                  )}
+                  <button onClick={(e) => { e.stopPropagation(); handleRemoveUploaded(i); }} style={{
+                    position: "absolute", top: "0.375rem", right: "0.375rem",
+                    width: "22px", height: "22px", borderRadius: "50%",
+                    background: "rgba(26,23,20,0.6)", color: "white",
+                    border: "none", cursor: "pointer", fontSize: "11px",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>✕</button>
+                </div>
+              ))}
+
+              {mediaFiles.map((file, i) => {
+                const globalIndex = mediaUrls.length + i;
                 return (
-                  <div
-                    key={i}
-                    onClick={() => setCoverIndex(item.index)}
+                  <div key={`new-${i}`} onClick={() => setCoverIndex(globalIndex)}
                     style={{
                       position: "relative", borderRadius: "10px",
-                      overflow: "hidden", aspectRatio: "4/3",
-                      cursor: "pointer",
-                      border: isCover ? "3px solid #C4622D" : "3px solid transparent",
-                      transition: "border 0.15s",
+                      overflow: "hidden", aspectRatio: "4/3", cursor: "pointer",
+                      outline: coverIndex === globalIndex ? "3px solid #C4622D" : "3px solid transparent",
+                      transition: "outline 0.15s",
                     }}
                   >
-                    {isUploaded ? (
-                      media.type === "video" ? (
-                        <video src={media.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <img src={media.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      )
+                    {file.type.startsWith("image/") ? (
+                      <img src={URL.createObjectURL(file)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
-                      media.type?.startsWith("image/") ? (
-                        <img src={URL.createObjectURL(media)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", background: "#F5F0E8" }}>🎥</div>
-                      )
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", background: "#F5F0E8" }}>🎥</div>
                     )}
-
-                    {/* 커버 뱃지 */}
-                    {isCover && (
+                    {coverIndex === globalIndex && (
                       <div style={{
                         position: "absolute", top: "0.375rem", left: "0.375rem",
                         background: "#C4622D", color: "white",
                         fontSize: "0.65rem", fontWeight: 500,
                         padding: "0.2rem 0.5rem", borderRadius: "100px",
-                      }}>
-                        커버
-                      </div>
+                      }}>커버</div>
                     )}
-
-                    {/* 업로드 진행률 */}
-                    {!isUploaded && uploading && uploadProgress[item.index - mediaUrls.length] !== undefined && (
+                    {uploading && uploadProgress[i] !== undefined && (
                       <div style={{
                         position: "absolute", bottom: 0, left: 0, right: 0,
                         background: "rgba(26,23,20,0.6)", padding: "0.25rem 0.5rem",
@@ -291,29 +298,19 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
                         <div style={{ height: "4px", background: "rgba(255,255,255,0.3)", borderRadius: "4px" }}>
                           <div style={{
                             height: "100%", borderRadius: "4px", background: "#C4622D",
-                            width: `${uploadProgress[item.index - mediaUrls.length]}%`,
-                            transition: "width 0.3s",
+                            width: `${uploadProgress[i]}%`, transition: "width 0.3s",
                           }} />
                         </div>
-                        <div style={{ fontSize: "0.65rem", color: "white", marginTop: "2px" }}>
-                          {uploadProgress[item.index - mediaUrls.length]}%
-                        </div>
+                        <div style={{ fontSize: "0.65rem", color: "white", marginTop: "2px" }}>{uploadProgress[i]}%</div>
                       </div>
                     )}
-
-                    {/* 삭제 버튼 */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        isUploaded ? handleRemoveUploaded(item.index) : handleRemoveFile(item.index - mediaUrls.length);
-                      }}
-                      style={{
-                        position: "absolute", top: "0.375rem", right: "0.375rem",
-                        width: "22px", height: "22px", borderRadius: "50%",
-                        background: "rgba(26,23,20,0.6)", color: "white",
-                        border: "none", cursor: "pointer", fontSize: "11px",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>✕</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleRemoveFile(i); }} style={{
+                      position: "absolute", top: "0.375rem", right: "0.375rem",
+                      width: "22px", height: "22px", borderRadius: "50%",
+                      background: "rgba(26,23,20,0.6)", color: "white",
+                      border: "none", cursor: "pointer", fontSize: "11px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>✕</button>
                   </div>
                 );
               })}

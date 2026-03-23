@@ -167,7 +167,6 @@ export default function MyPage({ user, onWrite, onEdit, onDetail }: Props) {
                 onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-3px)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}
               >
-                {/* 썸네일 */}
                 <div style={{
                   height: "120px", borderRadius: "10px",
                   overflow: "hidden",
@@ -177,7 +176,7 @@ export default function MyPage({ user, onWrite, onEdit, onDetail }: Props) {
                 }}>
                   {trip.mediaUrls?.length > 0 ? (
                     <img
-                      src={trip.mediaUrls[0].url}
+                      src={trip.mediaUrls[trip.coverIndex ?? 0]?.url || trip.mediaUrls[0].url}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   ) : "🗺️"}
@@ -191,7 +190,6 @@ export default function MyPage({ user, onWrite, onEdit, onDetail }: Props) {
                     {trip.isPublic ? "공개" : "비공개"}
                   </div>
                 </div>
-
                 <h3 style={{
                   fontFamily: "Georgia, serif", fontSize: "1rem",
                   marginBottom: "0.375rem", whiteSpace: "nowrap",
@@ -205,7 +203,6 @@ export default function MyPage({ user, onWrite, onEdit, onDetail }: Props) {
                 <p style={{ fontSize: "0.75rem", color: "#8A8278", marginBottom: "0.75rem" }}>
                   {trip.startDate} {trip.endDate && `~ ${trip.endDate}`}
                 </p>
-
                 {trip.tags?.length > 0 && (
                   <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginBottom: "0.875rem" }}>
                     {trip.tags.slice(0, 3).map((tag: string) => (
@@ -216,24 +213,19 @@ export default function MyPage({ user, onWrite, onEdit, onDetail }: Props) {
                     ))}
                   </div>
                 )}
-
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <button onClick={(e) => handleEdit(e, trip)} style={{
                     flex: 1, padding: "0.5rem", borderRadius: "8px",
                     background: "#F5F0E8", border: "none",
                     fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit",
                     color: "#1A1714",
-                  }}>
-                    수정
-                  </button>
+                  }}>수정</button>
                   <button onClick={(e) => handleDelete(e, trip.id)} style={{
                     flex: 1, padding: "0.5rem", borderRadius: "8px",
                     background: "#FCEBEB", border: "none",
                     fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit",
                     color: "#A32D2D",
-                  }}>
-                    삭제
-                  </button>
+                  }}>삭제</button>
                 </div>
               </div>
             ))}

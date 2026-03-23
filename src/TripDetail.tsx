@@ -112,7 +112,6 @@ export default function TripDetail({ tripId, onBack, onEdit }: Props) {
             </span>
           </div>
 
-          {/* 제목 */}
           <h1 style={{
             fontFamily: "Georgia, serif", fontSize: "2rem",
             fontWeight: 700, letterSpacing: "-1px",
@@ -121,7 +120,6 @@ export default function TripDetail({ tripId, onBack, onEdit }: Props) {
             {trip.title}
           </h1>
 
-          {/* 부제목 */}
           {trip.subtitle && (
             <p style={{ fontSize: "1.1rem", color: "#8A8278", fontWeight: 300, lineHeight: 1.6 }}>
               {trip.subtitle}

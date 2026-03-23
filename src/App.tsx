@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { onAuthChange, logOut } from "./services/authService";
 import Auth from "./Auth";
+import Landing from "./Landing";
 import WriteTrip from "./WriteTrip";
 import MyPage from "./MyPage";
 import TripDetail from "./TripDetail";
 
-type Page = "home" | "write" | "mypage" | "detail";
+type Page = "landing" | "home" | "write" | "mypage" | "detail";
+type AuthMode = "login" | "signup" | null;
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState<Page>("home");
+  const [page, setPage] = useState<Page>("landing");
+  const [authMode, setAuthMode] = useState<AuthMode>(null);
   const [editingTrip, setEditingTrip] = useState<any>(null);
   const [selectedTripId, setSelectedTripId] = useState<string>("");
 
@@ -18,6 +21,10 @@ export default function App() {
     const unsub = onAuthChange((u: any) => {
       setUser(u);
       setLoading(false);
+      if (u) {
+        setAuthMode(null);
+        setPage("home");
+      }
     });
     return () => unsub();
   }, []);
@@ -34,7 +41,23 @@ export default function App() {
     );
   }
 
-  if (!user) return <Auth />;
+  if (authMode) {
+    return (
+      <Auth
+        defaultTab={authMode}
+        onBack={() => setAuthMode(null)}
+      />
+    );
+  }
+
+  if (!user) {
+    return (
+      <Landing
+        onLogin={() => setAuthMode("login")}
+        onSignup={() => setAuthMode("signup")}
+      />
+    );
+  }
 
   if (page === "write") {
     return (
@@ -90,8 +113,10 @@ export default function App() {
         alignItems: "center", justifyContent: "space-between",
         position: "sticky", top: 0, zIndex: 10,
       }}>
-        <div style={{ fontSize: "1.25rem", fontWeight: 700, cursor: "pointer" }}
-          onClick={() => setPage("home")}>
+        <div
+          style={{ fontFamily: "Georgia, serif", fontSize: "1.25rem", fontWeight: 700, cursor: "pointer" }}
+          onClick={() => setPage("home")}
+        >
           Travel<span style={{ color: "#C4622D", fontStyle: "italic" }}>og</span>
         </div>
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
