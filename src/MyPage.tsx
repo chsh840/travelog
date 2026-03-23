@@ -208,6 +208,23 @@ export default function MyPage({ user, onWrite, onEdit, onDetail }: Props) {
         </div>
       )}
 
+      {/* 상단 바 */}
+      <div style={{
+        background: "white", borderBottom: "0.5px solid rgba(26,23,20,0.1)",
+        padding: "0.875rem 2rem", display: "flex",
+        alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 10,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <button onClick={() => window.history.back()} style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: "0.875rem", color: "#8A8278",
+          }}>← 뒤로</button>
+          <span style={{ color: "rgba(26,23,20,0.2)" }}>|</span>
+          <span style={{ fontSize: "0.9375rem", fontWeight: 500 }}>마이 페이지</span>
+        </div>
+      </div>
+
       {/* 프로필 히어로 */}
       <div style={{
         background: "#1A1714", padding: "3rem 2rem",
