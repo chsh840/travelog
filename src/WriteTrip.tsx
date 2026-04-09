@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createTrip, updateTrip } from "./services/tripService";
 import { uploadMultiple, UploadResult } from "./services/cloudinaryService";
+import TripMap, { MapLocation } from "./TripMap";
 
 interface Props {
   user: any;
@@ -28,6 +29,7 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
   const [uploadProgress, setUploadProgress] = useState<number[]>([]);
   const [uploading, setUploading] = useState(false);
   const [coverIndex, setCoverIndex] = useState<number>(editingTrip?.coverIndex ?? 0);
+  const [locations, setLocations] = useState<MapLocation[]>(editingTrip?.locations || []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -53,11 +55,12 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
   const handleSave = async () => {
     if (!title.trim()) { setMessage("error:제목을 입력해주세요"); return; }
     if (!content.trim()) { setMessage("error:내용을 입력해주세요"); return; }
-
+  
     setLoading(true);
     setMessage("");
-
+  
     try {
+      // 1. 대표 사진/영상 업로드
       let newMediaUrls: UploadResult[] = [];
       if (mediaFiles.length > 0) {
         setUploading(true);
@@ -71,15 +74,38 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
         });
         setUploading(false);
       }
-
+  
+      // 2. 마커별 미디어 업로드 (file 객체가 있는 것만)
+      const uploadedLocations = await Promise.all(
+        locations.map(async (loc) => {
+          if (!loc.media || loc.media.length === 0) return loc;
+  
+          const uploadedMedia = await Promise.all(
+            loc.media.map(async (m) => {
+              if (!m.file) return m; // 이미 업로드된 URL이면 그대로
+              const result = await uploadToCloudinary(m.file);
+              return {
+                url: result.url,
+                type: result.type,
+                name: m.name,
+                // file 필드는 제거 (Firestore에 저장 불가)
+              };
+            })
+          );
+  
+          return { ...loc, media: uploadedMedia };
+        })
+      );
+  
       const allMediaUrls = [...mediaUrls, ...newMediaUrls];
-
+  
       if (isEdit) {
         await updateTrip(editingTrip.id, {
           title, subtitle, country, city,
           startDate, endDate, content,
           tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-          isPublic, mediaUrls: allMediaUrls, coverIndex,
+          isPublic, mediaUrls: allMediaUrls, coverIndex, locations,
+          locations: uploadedLocations,
         });
         setMessage("success:수정이 완료됐어요! ✅");
       } else {
@@ -87,7 +113,8 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
           title, subtitle, country, city,
           startDate, endDate, content,
           tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-          isPublic, mood: "😊", mediaUrls: allMediaUrls, coverIndex,
+          isPublic, mood: "😊", mediaUrls: allMediaUrls, coverIndex, locations,
+          locations: uploadedLocations,
         });
         setMessage("success:여행 기록이 저장됐어요! 🎉 (ID: " + tripId + ")");
       }
@@ -329,6 +356,21 @@ export default function WriteTrip({ user, editingTrip, onBack }: Props) {
             <span style={{ fontSize: "0.75rem", color: "#8A8278" }}>JPG, PNG, MP4 · 사진 10MB / 영상 100MB 이하</span>
             <input type="file" multiple accept="image/*,video/*" onChange={handleFileSelect} style={{ display: "none" }} />
           </label>
+        </div>
+
+        {/* 경로 */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>경로</label>
+          <TripMap
+            locations={locations}
+            onAdd={(loc) => setLocations(prev => [...prev, loc])}
+            onRemove={(id) => setLocations(prev => prev.filter(l => l.id !== id))}
+            onUpdate={(id, updates) => setLocations(prev =>
+              prev.map(l => l.id === id ? { ...l, ...updates } : l)
+            )}
+            startDate={startDate}
+            endDate={endDate}
+          />
         </div>
 
         {/* 태그 */}
